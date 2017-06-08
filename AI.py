@@ -76,7 +76,7 @@ class AI:
             else:
                 for mv in board.legal_moves:
                     board.push(mv)
-                    bestScore = min(bestScore, -self.minimax(board, ply - 1, alpha, beta))
+                    bestScore = min(bestScore, self.minimax(board, ply - 1, alpha, beta))
                     board.pop()
                     beta = min(beta, bestScore)
                     if alpha >= beta:
