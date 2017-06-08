@@ -73,7 +73,7 @@ from ChessGameParams import TkinterGameSetupParams
 from optparse import OptionParser
 import time
 import chess
-from AI import RandomAI
+from AI import RandomAI, AI
 
 
 def player_color(turn):
@@ -93,7 +93,7 @@ class PythonChessMain:
 
         self.Gui = ChessGUI_pygame(1)
         self.Rules = ChessRules()
-        self.ai = RandomAI(self.board)
+        self.ai = AI(self.board, chess.BLACK)
 
     # def SetUp(self, options):
     #     # gameSetupParams: Player 1 and 2 Name, Color, Human/AI level
