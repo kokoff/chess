@@ -94,6 +94,7 @@ class PythonChessMain:
         self.Gui = ChessGUI_pygame(1)
         self.Rules = ChessRules()
         self.ai = AI(self.board, chess.BLACK)
+        self.ai1 = AI(self.board, chess.WHITE)
 
     # def SetUp(self, options):
     #     # gameSetupParams: Player 1 and 2 Name, Color, Human/AI level
@@ -166,6 +167,7 @@ class PythonChessMain:
                 move = self.ai.GetNextMove()
             else:
                 move = self.Gui.GetPlayerInput(board)
+                #move = self.ai1.GetNextMove()
             board.push(move)  # moveReport = string like "White Bishop moves from A1 to C3" (+) "and captures ___!"
             self.Gui.PrintMessage(str(move))
             # if self.AIvsAI and self.AIpause:
