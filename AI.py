@@ -68,7 +68,72 @@ class MoveHeap:
         return str(self.heap)
 
 
+class TreeNode:
+    def __init__(self, move):
+        self.move = move
+        self.moves = MoveHeap()
+        self.children = {}
+
+    def addChild(self, move, score):
+        self.moves.insert(move, score)
+        self.children[move] = TreeNode(move)
+
+    def getChild(self, move):
+        return self.children[move]
+
+    def hasChildren(self):
+        return len(self.moves) == 0
+
+    def __str__(self):
+        temp = str(self.move) + ' : '
+        temp += str(self.moves)
+        return temp
+
+
 class MoveTree:
+    def __init__(self, board, ply):
+        self.root = TreeNode(chess.Move.null())
+        self.initialise(board, ply, self.root)
+
+    def initialise(self, board, ply, node):
+        if ply == 0:
+            return
+        else:
+            for move in board.legal_moves:
+                node.addChild(move, 0)
+
+                board.push(move)
+                self.initialise(board, ply - 1, node.getChild(move))
+                board.pop()
+#                print node.getChild(move)
+            return node
+
+    def reshufle(self, board):
+        if len(self.root.moves) > 0:
+            move2 = board.pop()
+            move1 = board.peek()
+
+
+            self.root = self.root.getChild(move1).getChild(move2)
+            board.push(move2)
+
+    def __str__(self):
+        return '----MoveTree----\n' + self.to_string(self.root) + '--------------'
+
+    def to_string(self, node):
+        if not node.hasChildren():
+            return ''
+        else:
+            temp = '\n'
+            for i in node.moves:
+                child = node.getChild(i)
+                temp += str(child) + '\n'
+
+            for i in node.moves:
+                child = node.getChild(i)
+                temp += self.to_string(child)
+
+            return temp
 
 
 # class MoveHeapList:
@@ -121,6 +186,7 @@ class AI:
         path = os.path.join('data', 'komodo.bin')
         reader = polyglot.MemoryMappedReader(path)
         self.GetNextMove = self.getMinimaxMove
+        self.tree = MoveTree(self.board, self.ply)
         return reader.weighted_choice(self.board).move()
 
     def getMinimaxMove(self):
@@ -137,6 +203,7 @@ class AI:
             if bestScore <= score:
                 bestMove = move
                 bestScore = score
+
         assert (bestMove != chess.Move.null())
         return bestMove
 
