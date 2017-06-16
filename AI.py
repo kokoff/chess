@@ -71,6 +71,8 @@ class TranspositionTable:
         else:
             return None
 
+    def __contains__(self, item):
+        return item in self.table
 
 class AI:
     MIN_INT = - sys.maxint - 1
@@ -95,12 +97,12 @@ class AI:
 
         for move in self.board.legal_moves:
             self.board.push(move)
-            tableEntry = self.table.lookup(self.board.zobrist_hash(), self.ply)
-            if tableEntry is not None:
-                score = tableEntry
+            hash = self.board.zobrist_hash()
+            if hash in self.table:
+                score = self.table.lookup(hash, self.ply)
             else:
                 score = self.minimax(self.board, self.ply, AI.MIN_INT, AI.MAX_INT)
-                self.table.add(self.board.zobrist_hash(), score, self.ply)
+                self.table.add(hash, score, self.ply)
             self.board.pop()
             if bestScore <= score:
                 bestMove = move
@@ -123,12 +125,12 @@ class AI:
             if maxplayer:
                 for mv in board.legal_moves:
                     board.push(mv)
-                    tableEntry = self.table.lookup(board.zobrist_hash(), ply - 1)
-                    if tableEntry is not None:
-                        bestScore = tableEntry
+                    hash = board.zobrist_hash()
+                    if hash in self.table:
+                        bestScore = self.table.lookup(hash, ply - 1)
                     else:
                         bestScore = max(bestScore, self.minimax(board, ply - 1, alpha, beta))
-                        self.table.add(board.zobrist_hash(), bestScore, ply - 1)
+                        self.table.add(hash, bestScore, ply - 1)
                     board.pop()
                     alpha = max(alpha, bestScore)
                     if alpha >= beta:
@@ -136,12 +138,12 @@ class AI:
             else:
                 for mv in board.legal_moves:
                     board.push(mv)
-                    tableEntry = self.table.lookup(board.zobrist_hash(), ply - 1)
-                    if tableEntry is not None:
-                        bestScore = tableEntry
+                    hash = board.zobrist_hash()
+                    if hash in self.table:
+                        bestScore = self.table.lookup(hash, ply - 1)
                     else:
                         bestScore = min(bestScore, self.minimax(board, ply - 1, alpha, beta))
-                        self.table.add(board.zobrist_hash(), bestScore, ply - 1)
+                        self.table.add(hash, bestScore, ply - 1)
                     board.pop()
                     beta = min(beta, bestScore)
                     if alpha >= beta:
