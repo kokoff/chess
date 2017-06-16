@@ -24,26 +24,49 @@ class RandomAI:
         return chess.Move.null()
 
 
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.nextNode = None
+        self.prevNode = None
+
+
+class FIFO:
+    def __init__(self):
+        self.head = None
+        self.tail = self.head
+
+    def push(self, data):
+        node = Node(data)
+        node.nextNode = self.head
+        self.head = node
+
+    def pop(self):
+        data = self.tail.data
+        self.tail = self.tail.prevNode
+        self.tail.nextNode = None
+        return data
+
+
 class TranspositionTable:
     def __init__(self, capacity):
         self.table = {}
-        self.access_list = deque()
+        self.access_list = FIFO()
         self.capacity = capacity
 
     def add(self, hash, score, ply):
         tup = (score, ply)
 
         self.table[hash] = tup
-        self.access_list.append(hash)
+        self.access_list.push(tup)
 
         if len(self.table) >= self.capacity:
-            temp = self.access_list.popleft()
+            temp = self.access_list.pop()
             if temp in self.table:
                 self.table.pop(temp)
 
     def lookup(self, hash, ply):
         if hash in self.table and self.table[hash][1] >= ply:
-            #print "hit"
             return self.table[hash][0]
         else:
             return None
@@ -56,7 +79,7 @@ class AI:
     def __init__(self, board, player):
         self.board = board
         self.player = player
-        self.ply = 3
+        self.ply = 4
         self.GetNextMove = self.getOpening
         self.table = TranspositionTable(1000000)
 
@@ -100,12 +123,12 @@ class AI:
             if maxplayer:
                 for mv in board.legal_moves:
                     board.push(mv)
-                    tableEntry = self.table.lookup(board.zobrist_hash(), ply-1)
+                    tableEntry = self.table.lookup(board.zobrist_hash(), ply - 1)
                     if tableEntry is not None:
                         bestScore = tableEntry
                     else:
                         bestScore = max(bestScore, self.minimax(board, ply - 1, alpha, beta))
-                        self.table.add(board.zobrist_hash(), bestScore, ply-1)
+                        self.table.add(board.zobrist_hash(), bestScore, ply - 1)
                     board.pop()
                     alpha = max(alpha, bestScore)
                     if alpha >= beta:
@@ -113,12 +136,12 @@ class AI:
             else:
                 for mv in board.legal_moves:
                     board.push(mv)
-                    tableEntry = self.table.lookup(board.zobrist_hash(), ply-1)
+                    tableEntry = self.table.lookup(board.zobrist_hash(), ply - 1)
                     if tableEntry is not None:
                         bestScore = tableEntry
                     else:
                         bestScore = min(bestScore, self.minimax(board, ply - 1, alpha, beta))
-                        self.table.add(board.zobrist_hash(), bestScore, ply-1)
+                        self.table.add(board.zobrist_hash(), bestScore, ply - 1)
                     board.pop()
                     beta = min(beta, bestScore)
                     if alpha >= beta:
@@ -139,10 +162,12 @@ if __name__ == '__main__':
     ai = AI(board, chess.WHITE)
     ai1 = AI(board, chess.BLACK)
 
+    average = 0
     for i in range(10):
         start = timeit.default_timer()
         mv = ai.GetNextMove()
         end = timeit.default_timer() - start
+        average += end
         print mv, end
 
         board.push(mv)
@@ -151,6 +176,8 @@ if __name__ == '__main__':
         mv = ai1.GetNextMove()
         end = timeit.default_timer() - start
         print mv, end
+        average += end
         board.push(mv)
 
     print board
+    print average / 20
