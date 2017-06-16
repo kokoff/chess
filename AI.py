@@ -5,6 +5,7 @@ from random import randint
 import sys
 import timeit
 import os
+from collections import deque
 
 
 class RandomAI:
@@ -23,6 +24,31 @@ class RandomAI:
         return chess.Move.null()
 
 
+class TranspositionTable:
+    def __init__(self, capacity):
+        self.table = {}
+        self.access_list = deque()
+        self.capacity = capacity
+
+    def add(self, hash, score, ply):
+        tup = (score, ply)
+
+        self.table[hash] = tup
+        self.access_list.append(hash)
+
+        if len(self.table) >= self.capacity:
+            temp = self.access_list.popleft()
+            if temp in self.table:
+                self.table.pop(temp)
+
+    def lookup(self, hash, ply):
+        if hash in self.table and self.table[hash][1] >= ply:
+            #print "hit"
+            return self.table[hash][0]
+        else:
+            return None
+
+
 class AI:
     MIN_INT = - sys.maxint - 1
     MAX_INT = sys.maxint
@@ -32,6 +58,7 @@ class AI:
         self.player = player
         self.ply = 3
         self.GetNextMove = self.getOpening
+        self.table = TranspositionTable(1000000)
 
     def getOpening(self):
         path = os.path.join('data', 'komodo.bin')
@@ -45,7 +72,12 @@ class AI:
 
         for move in self.board.legal_moves:
             self.board.push(move)
-            score = self.minimax(self.board, self.ply, AI.MIN_INT, AI.MAX_INT)
+            tableEntry = self.table.lookup(self.board.zobrist_hash(), self.ply)
+            if tableEntry is not None:
+                score = tableEntry
+            else:
+                score = self.minimax(self.board, self.ply, AI.MIN_INT, AI.MAX_INT)
+                self.table.add(self.board.zobrist_hash(), score, self.ply)
             self.board.pop()
             if bestScore <= score:
                 bestMove = move
@@ -68,7 +100,12 @@ class AI:
             if maxplayer:
                 for mv in board.legal_moves:
                     board.push(mv)
-                    bestScore = max(bestScore, self.minimax(board, ply - 1, alpha, beta))
+                    tableEntry = self.table.lookup(board.zobrist_hash(), ply-1)
+                    if tableEntry is not None:
+                        bestScore = tableEntry
+                    else:
+                        bestScore = max(bestScore, self.minimax(board, ply - 1, alpha, beta))
+                        self.table.add(board.zobrist_hash(), bestScore, ply-1)
                     board.pop()
                     alpha = max(alpha, bestScore)
                     if alpha >= beta:
@@ -76,7 +113,12 @@ class AI:
             else:
                 for mv in board.legal_moves:
                     board.push(mv)
-                    bestScore = min(bestScore, self.minimax(board, ply - 1, alpha, beta))
+                    tableEntry = self.table.lookup(board.zobrist_hash(), ply-1)
+                    if tableEntry is not None:
+                        bestScore = tableEntry
+                    else:
+                        bestScore = min(bestScore, self.minimax(board, ply - 1, alpha, beta))
+                        self.table.add(board.zobrist_hash(), bestScore, ply-1)
                     board.pop()
                     beta = min(beta, bestScore)
                     if alpha >= beta:
