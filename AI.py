@@ -3,6 +3,7 @@ import chess.pgn
 from chess import polyglot
 from random import randint
 import sys
+import timeit
 import os
 import timeit
 
@@ -172,6 +173,94 @@ class MoveTree:
 #         return temp
 
 
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.nextNode = None
+        self.prevNode = None
+
+
+class FIFO:
+    def __init__(self):
+        self.head = None
+        self.tail = self.head
+
+    def push(self, data):
+        node = Node(data)
+        node.nextNode = self.head
+        self.head = node
+
+    def pop(self):
+        data = self.tail.data
+        self.tail = self.tail.prevNode
+        self.tail.nextNode = None
+        return data
+
+
+class MoveHeap:
+    def __init__(self):
+        self.heap = []
+
+    def insert(self, move, score):
+        temp = RankedMove(move, score)
+        i = len(self.heap)
+        self.heap.append(temp)
+
+        while self.heap[i] > self.heap[i / 2]:
+            self.heap[i] = self.heap[i / 2]
+            i /= 2
+
+        self.heap[i] = temp
+
+    def __iter__(self):
+        for x in self.heap:
+            yield x.move
+
+    def __len__(self):
+        return len(self.heap)
+
+    def __str__(self):
+        temp = '['
+        for i in self.heap:
+            temp += str(i) + ', '
+        temp += ']'
+        return str(self.heap)
+
+
+class MoveTable:
+    def __init__(self, capacity):
+        self.table = {}
+        self.access_time = {}
+        self.access_list = FIFO()
+        self.capacity = capacity
+
+    def add(self, hash, move, score, move_number):
+        if not self.table.has_key(hash):
+            #print 'not'
+            self.table[hash] = MoveHeap()
+            self.access_time[hash] = move_number
+            self.table[hash].insert(move, score)
+            self.access_list.push(hash)
+        else:
+             if self.access_time[hash] != move_number:
+                 self.table[hash] = MoveHeap()
+                 self.access_time[hash] = move_number
+             self.table[hash].insert(move, score)
+
+        if len(self.table) >= self.capacity:
+            temp = self.access_list.pop()
+            if temp in self.table:
+                self.table.pop(temp)
+
+    def moves(self, hash):
+        if hash in self.table:
+            return self.table[hash]
+        else:
+            return None
+
+    def __contains__(self, item):
+        return item in self.table
+
 class AI:
     MIN_INT = - sys.maxint - 1
     MAX_INT = sys.maxint
@@ -181,28 +270,40 @@ class AI:
         self.player = player
         self.ply = 3
         self.GetNextMove = self.getOpening
+        self.moveTable = MoveTable(100000)
 
     def getOpening(self):
         path = os.path.join('data', 'komodo.bin')
         reader = polyglot.MemoryMappedReader(path)
         self.GetNextMove = self.getMinimaxMove
-        self.tree = MoveTree(self.board, self.ply)
         return reader.weighted_choice(self.board).move()
 
     def getMinimaxMove(self):
-
         bestMove = chess.Move.null()
         bestScore = AI.MIN_INT
+        hash = self.board.zobrist_hash()
 
-        legal_moves = self.board.legal_moves
+
+        flag = hash in self.moveTable
+        if flag:
+            legal_moves = self.moveTable.moves(hash)
+            if len(legal_moves) != len(self.board.legal_moves):
+                print legal_moves
+                print self.board.legal_moves
+        else:
+            legal_moves = self.board.legal_moves
 
         for move in legal_moves:
             self.board.push(move)
             score = self.minimax(self.board, self.ply, AI.MIN_INT, AI.MAX_INT)
             self.board.pop()
+
             if bestScore <= score:
                 bestMove = move
                 bestScore = score
+
+            if not flag:
+                self.moveTable.add(hash, move, score, self.board.fullmove_number)
 
         assert (bestMove != chess.Move.null())
         return bestMove
@@ -217,33 +318,39 @@ class AI:
                 return -self.heuristic(board)
         else:
             bestScore = AI.MIN_INT if maxplayer else AI.MAX_INT
+            hash = board.zobrist_hash()
+            flag = hash in self.moveTable
 
-            legal_moves = board.legal_moves
+            if flag:
+                legal_moves = self.moveTable.moves(hash)
+            else:
+                legal_moves = board.legal_moves
 
             if maxplayer:
-                for mv in legal_moves:
-                    # evaluate best score
-                    board.push(mv)
-                    score = self.minimax(board, ply - 1, alpha, beta)
-                    bestScore = max(bestScore, score)
+                for move in legal_moves:
+                    board.push(move)
+                    bestScore = max(bestScore, self.minimax(board, ply - 1, alpha, beta))
                     board.pop()
 
-                    # alpha beta pruning
+                    if not flag:
+                        self.moveTable.add(hash, move, bestScore, board.fullmove_number)
+
                     alpha = max(alpha, bestScore)
                     if alpha >= beta:
                         break
             else:
-                for mv in legal_moves:
-                    # evaluate best score
-                    board.push(mv)
-                    score = self.minimax(board, ply - 1, alpha, beta)
-                    bestScore = min(bestScore, score)
+                for move in legal_moves:
+                    board.push(move)
+                    bestScore = min(bestScore, self.minimax(board, ply - 1, alpha, beta))
                     board.pop()
 
-                    # alpha beta pruning
+                    if not flag:
+                        self.moveTable.add(hash, move, bestScore, board.fullmove_number)
+
                     beta = min(beta, bestScore)
                     if alpha >= beta:
                         break
+
             return bestScore
 
     def heuristic(self, board):
@@ -263,18 +370,12 @@ if __name__ == '__main__':
     ai = AI(board, chess.WHITE)
     ai1 = AI(board, chess.BLACK)
 
-    # print board.fen()
-    # board = chess.Board("2k5/8/8/8/3rrr2/8/4K3/8 w KQkq - 0 1")
-    # print chess.WHITE
-    # print board.result() == '1-0'
-    # print ai.heuristic(board)
-    # print ai1.heuristic(board)
-    # sys.exit()
-
+    average = 0
     for i in range(10):
         start = timeit.default_timer()
         mv = ai.GetNextMove()
         end = timeit.default_timer() - start
+        average += end
         print mv, end
 
         board.push(mv)
@@ -283,21 +384,8 @@ if __name__ == '__main__':
         mv = ai1.GetNextMove()
         end = timeit.default_timer() - start
         print mv, end
+        average += end
         board.push(mv)
 
     print board
-
-    # nullMove = chess.Move.null()
-    # mvl = MoveHeapList(4)
-    # mvl.add(nullMove, 1, 0)
-    # mvl.add(nullMove, 1, 0)
-    # mvl.add(nullMove, 2, 1)
-    # mvl.add(nullMove, 2, 1)
-    # mvl.add(nullMove, 3, 2)
-    # mvl.add(nullMove, 3, 2)
-    # mvl.add(nullMove, 4, 3)
-    # mvl.add(nullMove, 4, 3)
-    # print mvl
-    # mvl.reshufle(1)
-    #
-    # print mvl
+    print average / 20
