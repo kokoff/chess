@@ -188,14 +188,68 @@ class FIFO:
     def push(self, data):
         node = Node(data)
         node.nextNode = self.head
+        if self.head:
+            self.head.prevNode = node
+        else:
+            self.tail = node
         self.head = node
 
     def pop(self):
-        data = self.tail.data
-        self.tail = self.tail.prevNode
-        self.tail.nextNode = None
-        return data
+        if self.is_empty():
+            return None
+        else:
+            data = self.tail.data
 
+            if self.head == self.tail:
+                self.head = None
+                self.tail = None
+            else:
+                self.tail = self.tail.prevNode
+                self.tail.nextNode = None
+
+            return data
+
+    def is_empty(self):
+        return self.head is None and self.tail is None
+
+
+class TranspositionTable:
+    def __init__(self, capacity):
+        self.table = {}
+        self.access_list = FIFO()
+        self.capacity = capacity
+
+    def add(self, hash, score, current_ply):
+        if hash in self.table and current_ply < self.table[hash][1]:
+            pass
+        else:
+            if hash in self.table and score != self.table[hash][0] and current_ply == self.table[hash][1]:
+                print 'COLLISION', self.table[hash][0], score , current_ply, self.table[hash][1]
+            tup = (score, current_ply)
+
+            self.table[hash] = tup
+            self.access_list.push(hash)
+
+            if len(self.table) >= self.capacity:
+                while not self.access_list.is_empty():
+                    temp = self.access_list.pop()
+                    if temp in self.table:
+                        #print 'REMOVING'
+                        self.table.pop(temp)
+                        break
+            #print len(self.table)
+
+    def lookup(self, hash, current_ply):
+        if hash in self.table and self.table[hash][1] >= current_ply:
+            return self.table[hash][0]
+        else:
+            return None
+
+    def lookup_ply(self, hash):
+        return self.table[hash][1]
+
+    def __contains__(self, item):
+        return item in self.table
 
 class MoveHeap:
     def __init__(self):
@@ -234,17 +288,12 @@ class MoveTable:
         self.access_list = FIFO()
         self.capacity = capacity
 
-    def add(self, hash, move, score, move_number):
-        if not self.table.has_key(hash):
-            #print 'not'
-            self.table[hash] = MoveHeap()
-            self.access_time[hash] = move_number
+    def add(self, hash, heap, ply):
+        if not hash in self.table:
+            self.table[hash] = (heap, ply)
             self.table[hash].insert(move, score)
             self.access_list.push(hash)
         else:
-             if self.access_time[hash] != move_number:
-                 self.table[hash] = MoveHeap()
-                 self.access_time[hash] = move_number
              self.table[hash].insert(move, score)
 
         if len(self.table) >= self.capacity:
@@ -268,9 +317,10 @@ class AI:
     def __init__(self, board, player):
         self.board = board
         self.player = player
-        self.ply = 3
+        self.ply = 4
         self.GetNextMove = self.getOpening
-        self.moveTable = MoveTable(100000)
+        #self.moveTable = MoveTable(100000)
+        self.trans_table = TranspositionTable(1000)
 
     def getOpening(self):
         path = os.path.join('data', 'komodo.bin')
@@ -281,17 +331,8 @@ class AI:
     def getMinimaxMove(self):
         bestMove = chess.Move.null()
         bestScore = AI.MIN_INT
-        hash = self.board.zobrist_hash()
 
-
-        flag = hash in self.moveTable
-        if flag:
-            legal_moves = self.moveTable.moves(hash)
-            if len(legal_moves) != len(self.board.legal_moves):
-                print legal_moves
-                print self.board.legal_moves
-        else:
-            legal_moves = self.board.legal_moves
+        legal_moves = self.board.legal_moves
 
         for move in legal_moves:
             self.board.push(move)
@@ -302,29 +343,28 @@ class AI:
                 bestMove = move
                 bestScore = score
 
-            if not flag:
-                self.moveTable.add(hash, move, score, self.board.fullmove_number)
-
         assert (bestMove != chess.Move.null())
         return bestMove
 
     def minimax(self, board, ply, alpha, beta):
         maxplayer = board.turn == self.player
+        hash = board.zobrist_hash()
+
+        flag = hash in self.trans_table and self.trans_table.lookup_ply(hash) >= ply
+        if flag:
+            cont = self.trans_table.lookup(hash, ply)
 
         if ply == 0:
             if maxplayer:
-                return self.heuristic(board)
+                score = self.heuristic(board)
             else:
-                return -self.heuristic(board)
+                score = -self.heuristic(board)
+            self.trans_table.add(hash, score, ply)
+            return score
         else:
             bestScore = AI.MIN_INT if maxplayer else AI.MAX_INT
-            hash = board.zobrist_hash()
-            flag = hash in self.moveTable
 
-            if flag:
-                legal_moves = self.moveTable.moves(hash)
-            else:
-                legal_moves = board.legal_moves
+            legal_moves = board.legal_moves
 
             if maxplayer:
                 for move in legal_moves:
@@ -332,24 +372,27 @@ class AI:
                     bestScore = max(bestScore, self.minimax(board, ply - 1, alpha, beta))
                     board.pop()
 
-                    if not flag:
-                        self.moveTable.add(hash, move, bestScore, board.fullmove_number)
-
                     alpha = max(alpha, bestScore)
                     if alpha >= beta:
                         break
+
             else:
                 for move in legal_moves:
                     board.push(move)
                     bestScore = min(bestScore, self.minimax(board, ply - 1, alpha, beta))
                     board.pop()
 
-                    if not flag:
-                        self.moveTable.add(hash, move, bestScore, board.fullmove_number)
-
                     beta = min(beta, bestScore)
                     if alpha >= beta:
                         break
+
+            if flag:
+                if (cont != bestScore and self.trans_table.lookup_ply(hash) == ply):
+                    print cont, bestScore, self.trans_table.lookup_ply(hash), ply
+
+
+            self.trans_table.add(hash, bestScore, ply)
+
 
             return bestScore
 
