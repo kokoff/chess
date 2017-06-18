@@ -69,109 +69,6 @@ class MoveHeap:
         return str(self.heap)
 
 
-class TreeNode:
-    def __init__(self, move):
-        self.move = move
-        self.moves = MoveHeap()
-        self.children = {}
-
-    def addChild(self, move, score):
-        self.moves.insert(move, score)
-        self.children[move] = TreeNode(move)
-
-    def getChild(self, move):
-        return self.children[move]
-
-    def hasChildren(self):
-        return len(self.moves) == 0
-
-    def __str__(self):
-        temp = str(self.move) + ' : '
-        temp += str(self.moves)
-        return temp
-
-
-class MoveTree:
-    def __init__(self, board, ply):
-        self.root = TreeNode(chess.Move.null())
-        self.initialise(board, ply, self.root)
-
-    def initialise(self, board, ply, node):
-        if ply == 0:
-            return
-        else:
-            for move in board.legal_moves:
-                node.addChild(move, 0)
-
-                board.push(move)
-                self.initialise(board, ply - 1, node.getChild(move))
-                board.pop()
-            # print node.getChild(move)
-            return node
-
-    def reshufle(self, board):
-        if len(self.root.moves) > 0:
-            move2 = board.pop()
-            move1 = board.peek()
-
-            self.root = self.root.getChild(move1).getChild(move2)
-            board.push(move2)
-
-    def __str__(self):
-        return '----MoveTree----\n' + self.to_string(self.root) + '--------------'
-
-    def to_string(self, node):
-        if not node.hasChildren():
-            return ''
-        else:
-            temp = '\n'
-            for i in node.moves:
-                child = node.getChild(i)
-                temp += str(child) + '\n'
-
-            for i in node.moves:
-                child = node.getChild(i)
-                temp += self.to_string(child)
-
-            return temp
-
-
-# class MoveHeapList:
-#     def __init__(self, ply):
-#         self.ply = ply + 1
-#         self.currentTree = {i: MoveHeap() for i in range(self.ply)}
-#         self.nextTree = {i: MoveHeap() for i in range(self.ply)}
-#
-#     def add(self, move, score, ply):
-#         self.dic[ply].insert(move, score)
-#
-#     def legal_moves(self, ply):
-#         return self.dic[ply]
-#
-#     def reshufle(self, num=2):
-#         i = self.ply
-#         while i - num >= 0:
-#             self.dic[i] = self.dic1[i - num]
-#             self.dic1[i-num] = MoveHeap()
-#             i -= 1
-#
-#         while i >= 0:
-#             self.dic[i] = MoveHeap()
-#             self.dic1[i] = MoveHeap()
-#             i -= 1
-#
-#     def __str__(self):
-#         temp = '[\n'
-#         for i in range(self.ply):
-#             temp += 'ply = ' + str(i) + ', ' + str(self.dic[i]) + '\n'
-#         temp += ']\n'
-#         temp += '[\n'
-#         for i in range(self.ply):
-#             temp += 'ply = ' + str(i) + ', ' + str(self.dic1[i]) + '\n'
-#         temp += ']\n'
-#         return temp
-
-
 class Node:
     def __init__(self, data):
         self.data = data
@@ -222,8 +119,6 @@ class TranspositionTable:
         if hash in self.table and current_ply < self.table[hash][1]:
             pass
         else:
-            if hash in self.table and score != self.table[hash][0] and current_ply == self.table[hash][1]:
-                print 'COLLISION', self.table[hash][0], score, current_ply, self.table[hash][1]
             tup = (score, current_ply)
 
             self.table[hash] = tup
@@ -233,10 +128,8 @@ class TranspositionTable:
                 while not self.access_list.is_empty():
                     temp = self.access_list.pop()
                     if temp in self.table:
-                        #print 'REMOVING'
                         self.table.pop(temp)
                         break
-                        # print len(self.table)
 
     def lookup(self, hash, current_ply):
         if hash in self.table and self.table[hash][1] >= current_ply:
@@ -320,7 +213,7 @@ class AI:
         self.player = player
         self.ply = 3
         self.GetNextMove = self.getOpening
-        self.trans_table = TranspositionTable(100000)
+        self.trans_table = TranspositionTable(1000000)
 
     def getOpening(self):
         path = os.path.join('data', 'komodo.bin')
@@ -350,17 +243,16 @@ class AI:
         maxplayer = board.turn == self.player
         hash = board.zobrist_hash()
 
-        flag = hash in self.trans_table and self.trans_table.lookup_ply(hash) >= ply
-        if flag:
-            cont = self.trans_table.lookup(hash, ply)
-            return cont
+        # Check if board already evaluated
+        if hash in self.trans_table and self.trans_table.lookup_ply(hash) >= ply:
+            return self.trans_table.lookup(hash, ply)
 
-        if ply == 0:
+        elif ply == 0:
             if maxplayer:
                 score = self.heuristic(board)
             else:
                 score = -self.heuristic(board)
-            self.trans_table.add(hash, score, ply)
+
             return score
         else:
             bestScore = AI.MIN_INT if maxplayer else AI.MAX_INT
@@ -376,7 +268,6 @@ class AI:
                     alpha = max(alpha, bestScore)
                     if alpha >= beta:
                         break
-
             else:
                 for move in legal_moves:
                     board.push(move)
@@ -387,9 +278,7 @@ class AI:
                     if alpha >= beta:
                         break
 
-            if flag:
-                if (cont != bestScore):
-                    print cont, bestScore, self.trans_table.lookup_ply(hash), ply, alpha >= beta
+            # if there wasn't a prune add score to transposition table
             if alpha < beta:
                 self.trans_table.add(hash, bestScore, ply)
 
