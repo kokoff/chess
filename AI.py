@@ -106,14 +106,13 @@ class MoveTree:
                 board.push(move)
                 self.initialise(board, ply - 1, node.getChild(move))
                 board.pop()
-#                print node.getChild(move)
+            # print node.getChild(move)
             return node
 
     def reshufle(self, board):
         if len(self.root.moves) > 0:
             move2 = board.pop()
             move1 = board.peek()
-
 
             self.root = self.root.getChild(move1).getChild(move2)
             board.push(move2)
@@ -224,7 +223,7 @@ class TranspositionTable:
             pass
         else:
             if hash in self.table and score != self.table[hash][0] and current_ply == self.table[hash][1]:
-                print 'COLLISION', self.table[hash][0], score , current_ply, self.table[hash][1]
+                print 'COLLISION', self.table[hash][0], score, current_ply, self.table[hash][1]
             tup = (score, current_ply)
 
             self.table[hash] = tup
@@ -237,7 +236,7 @@ class TranspositionTable:
                         #print 'REMOVING'
                         self.table.pop(temp)
                         break
-            #print len(self.table)
+                        # print len(self.table)
 
     def lookup(self, hash, current_ply):
         if hash in self.table and self.table[hash][1] >= current_ply:
@@ -250,6 +249,7 @@ class TranspositionTable:
 
     def __contains__(self, item):
         return item in self.table
+
 
 class MoveHeap:
     def __init__(self):
@@ -294,7 +294,7 @@ class MoveTable:
             self.table[hash].insert(move, score)
             self.access_list.push(hash)
         else:
-             self.table[hash].insert(move, score)
+            self.table[hash].insert(move, score)
 
         if len(self.table) >= self.capacity:
             temp = self.access_list.pop()
@@ -310,6 +310,7 @@ class MoveTable:
     def __contains__(self, item):
         return item in self.table
 
+
 class AI:
     MIN_INT = - sys.maxint - 1
     MAX_INT = sys.maxint
@@ -317,10 +318,9 @@ class AI:
     def __init__(self, board, player):
         self.board = board
         self.player = player
-        self.ply = 4
+        self.ply = 3
         self.GetNextMove = self.getOpening
-        #self.moveTable = MoveTable(100000)
-        self.trans_table = TranspositionTable(1000)
+        self.trans_table = TranspositionTable(100000)
 
     def getOpening(self):
         path = os.path.join('data', 'komodo.bin')
@@ -353,6 +353,7 @@ class AI:
         flag = hash in self.trans_table and self.trans_table.lookup_ply(hash) >= ply
         if flag:
             cont = self.trans_table.lookup(hash, ply)
+            return cont
 
         if ply == 0:
             if maxplayer:
@@ -387,12 +388,10 @@ class AI:
                         break
 
             if flag:
-                if (cont != bestScore and self.trans_table.lookup_ply(hash) == ply):
-                    print cont, bestScore, self.trans_table.lookup_ply(hash), ply
-
-
-            self.trans_table.add(hash, bestScore, ply)
-
+                if (cont != bestScore):
+                    print cont, bestScore, self.trans_table.lookup_ply(hash), ply, alpha >= beta
+            if alpha < beta:
+                self.trans_table.add(hash, bestScore, ply)
 
             return bestScore
 
