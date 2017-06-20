@@ -1,0 +1,21 @@
+PIECE_NAMES = {1: 'Pawn',
+               2: 'Knight',
+               3: 'Bishop',
+               4: 'Rook',
+               5: 'Queen',
+               6: 'King',
+               'p': 'Black Pawn',
+               'n': 'Black Knight',
+               'b': 'Black Bishop',
+               'r': 'Black Rook',
+               'q': 'Black Queen',
+               'k': 'Black King',
+               'P': 'White Pawn',
+               'N': 'White Knight',
+               'B': 'White Bishop',
+               'R': 'White Rook',
+               'Q': 'White Queen',
+               'K': 'White King'}
+
+PLAYER_NAMES = {True: 'White',
+                False: 'Black'}

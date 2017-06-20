@@ -74,25 +74,18 @@ from optparse import OptionParser
 import time
 import chess
 from AI import RandomAI, AI
+from utils import PIECE_NAMES
 
-
-def player_color(turn):
-    if turn:
-        return "White"
-    else:
-        return "Black"
 
 class PythonChessMain:
     def __init__(self, options):
         if options.debug:
-            self.Board = ChessBoard(2)
             self.debugMode = True
         else:
             self.board = chess.Board()  # 0 for normal board setup; see ChessBoard class for other options (for testing purposes)
             self.debugMode = False
 
         self.Gui = ChessGUI_pygame(1)
-        self.Rules = ChessRules()
         self.ai = AI(self.board, chess.BLACK)
 
     # def SetUp(self, options):
@@ -166,21 +159,35 @@ class PythonChessMain:
                 move = self.ai.GetNextMove()
             else:
                 move = self.Gui.GetPlayerInput(board)
-            board.push(move)  # moveReport = string like "White Bishop moves from A1 to C3" (+) "and captures ___!"
-            self.Gui.PrintMessage(str(move))
-            # if self.AIvsAI and self.AIpause:
-            #     time.sleep(self.AIpauseSeconds)
 
-        if board.is_checkmate():
-            self.Gui.PrintMessage("CHECKMATE!")
-        if board.is_stalemate():
-            self.Gui.PrintMessage("CHECKMATE!")
-        if board.is_fivefold_repetition():
-            self.Gui.PrintMessage("REPEATED MOVES!")
-        if board.is_seventyfive_moves():
-            self.Gui.PrintMessage("75 MOVES WITHOUT CAPTURED PIECE!")
-        self.Gui.PrintMessage(player + " won the game!")
-        self.Gui.EndGame(board)
+            if board.is_capture(move):
+                self.Gui.PrintMessage(
+                    str(move) + '    ' + PIECE_NAMES[board.piece_at(move.to_square).symbol()] + ' was captured')
+            else:
+                self.Gui.PrintMessage(str(move))
+            board.push(move)  # moveReport = string like "White Bishop moves from A1 to C3" (+) "and captures ___!"
+
+        if board.is_game_over():
+            self.Gui.PrintMessage('')
+            winner = 'Black' if board.turn else 'White'
+            draw_message = 'The game is a draw!'
+            if board.is_checkmate():
+                self.Gui.PrintMessage("Checkmate!")
+                self.Gui.PrintMessage(winner + " won the game!")
+            elif board.is_stalemate():
+                self.Gui.PrintMessage("Stalemate!")
+                self.Gui.PrintMessage(draw_message)
+            elif board.is_insufficient_material():
+                self.Gui.PrintMessage("Insufficient Material!")
+                self.Gui.PrintMessage(draw_message)
+            elif board.is_fivefold_repetition():
+                self.Gui.PrintMessage("Fivefold Repetition!")
+                self.Gui.PrintMessage(draw_message)
+            elif board.is_seventyfive_moves():
+                self.Gui.PrintMessage("Seventy Five Move Rule!")
+                self.Gui.PrintMessage(draw_message)
+            self.Gui.PrintMessage('Result: ' + board.result())
+            self.Gui.EndGame(board)
 
 
 parser = OptionParser()
