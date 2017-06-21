@@ -83,11 +83,7 @@ class PythonChessMain:
         game_params = TkinterGameSetupParams()
         (player1Type, player1Depth, player2Type, player2Depth) = game_params.GetGameSetupParams()
 
-        # print (player1Type, player1Depth, player2Type, player2Depth)
-        # print player1Type is 'AI'
-
         if player1Type == 'AI':
-            # print 'HIS'
             if player1Depth > 0:
                 self.ai_players[chess.WHITE] = AI(self.board, chess.WHITE, player1Depth)
             else:
@@ -98,8 +94,6 @@ class PythonChessMain:
                 self.ai_players[chess.BLACK] = AI(self.board, chess.BLACK, player2Depth)
             else:
                 self.ai_players[chess.BLACK] = RandomAI(self.board)
-
-        print self.ai_players
 
     def MainLoop(self):
         while not self.board.is_game_over():
@@ -164,7 +158,6 @@ parser.add_option("-s", dest="skip_setup",
 (options, args) = parser.parse_args()
 
 game = PythonChessMain(options)
-print options.skip_setup
 if not options.skip_setup:
     game.SetUp()
 else:
