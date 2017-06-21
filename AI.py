@@ -31,8 +31,10 @@ class AI:
         self.board = board
         self.player = player
         self.ply = 3
-        self.GetNextMove = self.getOpening
-
+        if self.board.fen() == chess.STARTING_FEN:
+            self.GetNextMove = self.getOpening
+        else:
+            self.GetNextMove = self.getMinimaxMove
     def getOpening(self):
         path = os.path.join('data', 'komodo.bin')
         reader = polyglot.MemoryMappedReader(path)
