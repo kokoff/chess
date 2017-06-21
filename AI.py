@@ -62,7 +62,6 @@ class AI:
                 bestMove = move
                 bestScore = score
 
-        assert (bestMove != chess.Move.null())
         return bestMove
 
     def minimax(self, board, ply, alpha, beta):
@@ -72,32 +71,27 @@ class AI:
             return self.heuristic(board)
         else:
             bestScore = AI.MIN_INT if maxplayer else AI.MAX_INT
+            compare = max if maxplayer else min
+            minimax = self.minimax
 
             if maxplayer:
                 for mv in board.legal_moves:
                     board.push(mv)
-                    bestScore = max(bestScore, self.minimax(board, ply - 1, alpha, beta))
+                    bestScore = compare(bestScore, minimax(board, ply - 1, alpha, beta))
                     board.pop()
-                    alpha = max(alpha, bestScore)
+                    alpha = compare(alpha, bestScore)
                     if alpha >= beta:
                         break
             else:
                 for mv in board.legal_moves:
                     board.push(mv)
-                    bestScore = min(bestScore, self.minimax(board, ply - 1, alpha, beta))
+                    bestScore = compare(bestScore, minimax(board, ply - 1, alpha, beta))
                     board.pop()
-                    beta = min(beta, bestScore)
+                    beta = compare(beta, bestScore)
                     if alpha >= beta:
                         break
 
             return bestScore
-
-    def evaluate_material(self, board):
-        score = 0
-        for piece in chess.PIECE_TYPES:
-            score += (len(board.pieces(piece, self.player)) - len(board.pieces(piece, not self.player))) * \
-                     AI.PIECE_SCORES[piece]
-        return score
 
     def heuristic(self, board):
         if board.is_game_over():
@@ -105,17 +99,22 @@ class AI:
                 iwin = (board.result() is '1-0') is self.player
                 return 2000 if iwin else -2000
             else:
-                score = self.evaluate_material(board)
+                score = 0
+                for piece in chess.PIECE_TYPES:
+                    score += (len(board.pieces(piece, self.player)) - len(board.pieces(piece, not self.player))) * \
+                             AI.PIECE_SCORES[piece]
 
                 if score > 0:
                     score = -score
                 return score
         else:
-            score = self.evaluate_material(board)
+            score = 0
+            for piece in chess.PIECE_TYPES:
+                score += (len(board.pieces(piece, self.player)) - len(board.pieces(piece, not self.player))) * \
+                         AI.PIECE_SCORES[piece]
             return score
 
-
-if __name__ == '__main__':
+def main():
     board = chess.Board()
 
     ai = AI(board, chess.WHITE)
@@ -136,3 +135,6 @@ if __name__ == '__main__':
         board.push(mv)
 
     print board
+
+if __name__ == '__main__':
+    main()
