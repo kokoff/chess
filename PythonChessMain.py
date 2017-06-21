@@ -159,12 +159,16 @@ class PythonChessMain:
                 move = self.ai.GetNextMove()
             else:
                 move = self.Gui.GetPlayerInput(board)
+                if board.piece_type_at(move.from_square) is chess.PAWN and move.to_square in chess.SquareSet(
+                        chess.BB_RANK_8):
+                    move.promotion = chess.QUEEN
 
             if board.is_capture(move):
                 self.Gui.PrintMessage(
                     str(move) + '    ' + PIECE_NAMES[board.piece_at(move.to_square).symbol()] + ' was captured')
             else:
                 self.Gui.PrintMessage(str(move))
+
             board.push(move)  # moveReport = string like "White Bishop moves from A1 to C3" (+) "and captures ___!"
 
         if board.is_game_over():
