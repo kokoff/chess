@@ -69,7 +69,7 @@ class AI:
     def minimax(self, board, ply, alpha, beta):
         maxplayer = board.turn == self.player
 
-        if ply == 0:
+        if ply == 0 or board.is_game_over():
             return self.heuristic(board)
         else:
             bestScore = AI.MIN_INT if maxplayer else AI.MAX_INT
@@ -94,14 +94,15 @@ class AI:
             return bestScore
 
     def heuristic(self, board):
-        score = 0
-        for piece in chess.PIECE_TYPES:
-            score += (len(board.pieces(piece, self.player)) - len(board.pieces(piece, not self.player))) * \
-                     AI.PIECE_SCORES[piece]
         if board.is_game_over() and board.result() != '1/2-1/2':
             iwin = (board.result() is '1-0') is self.player
-            score += 2000 if iwin else -2000
-        return score
+            return 2000 if iwin else -2000
+        else:
+            score = 0
+            for piece in chess.PIECE_TYPES:
+                score += (len(board.pieces(piece, self.player)) - len(board.pieces(piece, not self.player))) * \
+                         AI.PIECE_SCORES[piece]
+            return score
 
 
 if __name__ == '__main__':
