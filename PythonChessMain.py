@@ -79,69 +79,32 @@ from utils import PIECE_NAMES
 
 class PythonChessMain:
     def __init__(self, options):
-        if options.debug:
-            self.debugMode = True
-        else:
-            self.board = chess.Board()  # 0 for normal board setup; see ChessBoard class for other options (for testing purposes)
-            self.debugMode = False
+        self.board = chess.Board()
 
         self.Gui = ChessGUI_pygame(1)
-        self.ai = AI(self.board, chess.BLACK)
+        self.ai_players = {}
 
-    # def SetUp(self, options):
-    #     # gameSetupParams: Player 1 and 2 Name, Color, Human/AI level
-    #     if self.debugMode:
-    #         player1Name = 'Kasparov'
-    #         player1Type = 'human'
-    #         player1Color = 'white'
-    #         player2Name = 'Light Blue'
-    #         player2Type = 'randomAI'
-    #         player2Color = 'black'
-    #     else:
-    #         GameParams = TkinterGameSetupParams()
-    #         (player1Name, player1Color, player1Type, player2Name, player2Color,
-    #          player2Type) = GameParams.GetGameSetupParams()
-    #
-    #     self.player = [0, 0]
-    #     if player1Type == 'human':
-    #         self.player[0] = ChessPlayer(player1Name, player1Color)
-    #     elif player1Type == 'randomAI':
-    #         self.player[0] = ChessAI_random(player1Name, player1Color)
-    #     elif player1Type == 'defenseAI':
-    #         self.player[0] = ChessAI_defense(player1Name, player1Color)
-    #     elif player1Type == 'offenseAI':
-    #         self.player[0] = ChessAI_offense(player1Name, player1Color)
-    #
-    #     if player2Type == 'human':
-    #         self.player[1] = ChessPlayer(player2Name, player2Color)
-    #     elif player2Type == 'randomAI':
-    #         self.player[1] = ChessAI_random(player2Name, player2Color)
-    #     elif player2Type == 'defenseAI':
-    #         self.player[1] = ChessAI_defense(player2Name, player2Color)
-    #     elif player2Type == 'offenseAI':
-    #         self.player[1] = ChessAI_offense(player2Name, player2Color)
-    #
-    #     if 'AI' in self.player[0].GetType() and 'AI' in self.player[1].GetType():
-    #         self.AIvsAI = True
-    #     else:
-    #         self.AIvsAI = False
-    #
-    #     if options.pauseSeconds > 0:
-    #         self.AIpause = True
-    #         self.AIpauseSeconds = int(options.pauseSeconds)
-    #     else:
-    #         self.AIpause = False
-    #
-    #     # create the gui object - didn't do earlier because pygame conflicts with any gui manager (Tkinter, WxPython...)
-    #     if options.text:
-    #         self.guitype = 'text'
-    #         self.Gui = ChessGUI_text()
-    #     else:
-    #         self.guitype = 'pygame'
-    #         if options.old:
-    #             self.Gui = ChessGUI_pygame(0)
-    #         else:
-    #             self.Gui = ChessGUI_pygame(1)
+    def SetUp(self):
+        game_params = TkinterGameSetupParams()
+        (player1Type, player1Depth, player2Type, player2Depth) = game_params.GetGameSetupParams()
+
+        # print (player1Type, player1Depth, player2Type, player2Depth)
+        # print player1Type is 'AI'
+
+        if player1Type == 'AI':
+            # print 'HIS'
+            if player1Depth > -1:
+                self.ai_players[chess.WHITE] = AI(self.board, chess.WHITE, player1Depth)
+            else:
+                self.ai_players[chess.WHITE] = RandomAI()
+
+        if player2Type == 'AI':
+            if player2Depth > -1:
+                self.ai_players[chess.BLACK] = AI(self.board, chess.BLACK, player2Depth)
+            else:
+                self.ai_players[chess.BLACK] = RandomAI()
+
+        print self.ai_players
 
     def MainLoop(self):
         while not self.board.is_game_over():
@@ -155,22 +118,25 @@ class PythonChessMain:
             if board.is_check():
                 self.Gui.PrintMessage("Warning... " + player + " is in check!")
 
-            if board.turn == chess.BLACK:
-                move = self.ai.GetNextMove()
+            # Get move from player
+            if board.turn in self.ai_players:
+                move = self.ai_players[board.turn].GetNextMove()
             else:
                 move = self.Gui.GetPlayerInput(board)
                 if board.piece_type_at(move.from_square) is chess.PAWN and move.to_square in chess.SquareSet(
                         chess.BB_RANK_8):
                     move.promotion = chess.QUEEN
 
+            # Indicate if piece was captured
             if board.is_capture(move):
                 self.Gui.PrintMessage(
                     str(move) + '    ' + PIECE_NAMES[board.piece_at(move.to_square).symbol()] + ' was captured')
             else:
                 self.Gui.PrintMessage(str(move))
 
-            board.push(move)  # moveReport = string like "White Bishop moves from A1 to C3" (+) "and captures ___!"
+            board.push(move)
 
+        # Check for end game conditions
         if board.is_game_over():
             self.Gui.PrintMessage('')
             winner = 'Black' if board.turn else 'White'
@@ -195,17 +161,15 @@ class PythonChessMain:
 
 
 parser = OptionParser()
-parser.add_option("-d", dest="debug",
-                  action="store_true", default=False, help="Enable debug mode (different starting board configuration)")
-parser.add_option("-t", dest="text",
-                  action="store_true", default=False, help="Use text-based GUI")
-parser.add_option("-o", dest="old",
-                  action="store_true", default=False, help="Use old graphics in pygame GUI")
-parser.add_option("-p", dest="pauseSeconds", metavar="SECONDS",
-                  action="store", default=0, help="Sets time to pause between moves in AI vs. AI games (default = 0)")
+parser.add_option("-s", dest="skip_setup",
+                  action="store_true", default=False, help="Skip setup screen")
 
 (options, args) = parser.parse_args()
 
 game = PythonChessMain(options)
-# game.SetUp(options)
+print options.skip_setup
+if not options.skip_setup:
+    game.SetUp()
+else:
+    game.ai_players[chess.BLACK] = AI(game.board, chess.BLACK)
 game.MainLoop()

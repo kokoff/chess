@@ -27,14 +27,15 @@ class AI:
     MIN_INT = - sys.maxint - 1
     MAX_INT = sys.maxint
 
-    def __init__(self, board, player):
+    def __init__(self, board, player, ply=4):
         self.board = board
         self.player = player
-        self.ply = 3
+        self.ply = ply - 1
         if self.board.fen() == chess.STARTING_FEN:
             self.GetNextMove = self.getOpening
         else:
             self.GetNextMove = self.getMinimaxMove
+
     def getOpening(self):
         path = os.path.join('data', 'komodo.bin')
         reader = polyglot.MemoryMappedReader(path)
