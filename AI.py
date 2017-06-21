@@ -27,6 +27,12 @@ class RandomAI:
 class AI:
     MIN_INT = - sys.maxint - 1
     MAX_INT = sys.maxint
+    PIECE_SCORES = {chess.PAWN: 10,
+                    chess.KNIGHT: 30,
+                    chess.BISHOP: 30,
+                    chess.ROOK: 50,
+                    chess.QUEEN: 90,
+                    chess.KING: 2000}
 
     def __init__(self, board, player, ply=4):
         self.board = board
@@ -66,7 +72,10 @@ class AI:
         else:
             bestScore = AI.MIN_INT if maxplayer else AI.MAX_INT
 
-            if maxplayer:
+            if board.is_game_over():
+                return self.heuristic(board)
+
+            elif maxplayer:
                 for mv in board.legal_moves:
                     board.push(mv)
                     bestScore = max(bestScore, self.minimax(board, ply - 1, alpha, beta))
@@ -87,11 +96,16 @@ class AI:
 
     def heuristic(self, board):
         score = 0
-        for piece in chess.PIECE_TYPES:
-            score += (len(board.pieces(piece, self.player)) - len(board.pieces(piece, not self.player))) * piece
+
         if board.is_game_over() and board.result() != '1/2-1/2':
             iwin = (board.result() is '1-0') is self.player
-            score += 100 if iwin else -100
+            score += 2000 if iwin else -2000
+        else:
+            for piece in chess.PIECE_TYPES:
+                score += (len(board.pieces(piece, self.player)) - len(board.pieces(piece, not self.player))) * AI.PIECE_SCORES[piece]
+
+            score += len(board.legal_moves)
+
         return score
 
 
