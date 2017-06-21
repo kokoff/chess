@@ -118,9 +118,13 @@ class PythonChessMain:
 
             # Indicate if piece was captured
             if board.is_capture(move):
+                if board.is_en_passant(move):
+                    piece_captured = PIECE_NAMES[chess.PAWN]
+                else:
+                    piece_captured = PIECE_NAMES[board.piece_at(move.to_square).piece_type]
                 self.Gui.PrintMessage(
                     PIECE_NAMES[board.piece_at(move.from_square).piece_type] + ' ' +
-                    str(move) + '    ' + PIECE_NAMES[board.piece_at(move.to_square).piece_type] + ' was captured')
+                    str(move) + '    ' + piece_captured + ' was captured')
             else:
                 self.Gui.PrintMessage(PIECE_NAMES[board.piece_at(move.from_square).piece_type] + ' '
                                       + str(move))
