@@ -1,10 +1,11 @@
+import os
+import sys
+import timeit
+from random import randint
+
 import chess
 import chess.pgn
 from chess import polyglot
-from random import randint
-import sys
-import timeit
-import os
 
 
 class RandomAI:

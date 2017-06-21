@@ -62,18 +62,13 @@
    
 """
 
-from ChessBoard import ChessBoard
-from ChessAI import ChessAI_random, ChessAI_defense, ChessAI_offense
-from ChessPlayer import ChessPlayer
-from ChessGUI_text import ChessGUI_text
-from ChessGUI_pygame import ChessGUI_pygame
-from ChessRules import ChessRules
-from ChessGameParams import TkinterGameSetupParams
-
 from optparse import OptionParser
-import time
+
 import chess
+
 from AI import RandomAI, AI
+from ChessGUI_pygame import ChessGUI_pygame
+from ChessGameParams import TkinterGameSetupParams
 from utils import PIECE_NAMES
 
 

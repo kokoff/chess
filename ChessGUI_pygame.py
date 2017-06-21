@@ -11,20 +11,19 @@
  http://yakinikuman.wordpress.com/
  """
 
-import pygame
 import os
 import sys
-from pygame.locals import *
-from ChessRules import ChessRules
-from ScrollingTextBox import ScrollingTextBox
-from ChessBoard import ChessBoard
+
 import chess
+import pygame
+from pygame.locals import *
+
+from ScrollingTextBox import ScrollingTextBox
 
 
 class ChessGUI_pygame:
     def __init__(self, graphicStyle=1):
         os.environ['SDL_VIDEO_CENTERED'] = '1'  # should center pygame window on the screen
-        self.Rules = ChessRules()
         pygame.init()
         pygame.display.init()
         self.screen = pygame.display.set_mode((850, 500))
@@ -243,10 +242,6 @@ class ChessGUI_pygame:
                         if len(allowedSquares) > 0:
                             fromSquareChosen = 1
                             fromSquare = squareClicked
-                            # elif currentColor == 'white' and 'w' in board[r][c]:
-                            #     if len(self.Rules.GetListOfValidMoves(board, currentColor, squareClicked)) > 0:
-                            #         fromSquareChosen = 1
-                            #         fromTuple = squareClicked
 
             elif fromSquareChosen and not toSquareChosen:
                 possibleDestinations = allowedSquares
