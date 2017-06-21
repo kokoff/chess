@@ -25,7 +25,7 @@ class TkinterGameSetupParams:
         Label(self.frame, textvariable=self.instructionMessage).grid(row=0)
         self.instructionMessage.set("Please enter game options.")
 
-        # Label(self.frame, text="Name").grid(row=1, column=1)
+
         Label(self.frame, text="Type").grid(row=1, column=2)
         Label(self.frame, text="Search Depth").grid(row=1, column=4)
 
@@ -51,8 +51,10 @@ class TkinterGameSetupParams:
         self.entry_player2Depth.grid(row=3, column=4)
         self.entry_player2Depth.insert(ANCHOR, 4)
 
+        Label(self.frame, text="AI with search depth less \nthan 1 behaves randomly").grid(row=4, column=4)
+
         b = Button(self.frame, text="Start the Game!", command=self.ok)
-        b.grid(row=4, column=1)
+        b.grid(row=5, column=1)
 
     def ok(self):
         # self.player1Name = self.entry_player1Name.get()

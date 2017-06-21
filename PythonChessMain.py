@@ -93,16 +93,16 @@ class PythonChessMain:
 
         if player1Type == 'AI':
             # print 'HIS'
-            if player1Depth > -1:
+            if player1Depth > 0:
                 self.ai_players[chess.WHITE] = AI(self.board, chess.WHITE, player1Depth)
             else:
                 self.ai_players[chess.WHITE] = RandomAI()
 
         if player2Type == 'AI':
-            if player2Depth > -1:
+            if player2Depth > 0:
                 self.ai_players[chess.BLACK] = AI(self.board, chess.BLACK, player2Depth)
             else:
-                self.ai_players[chess.BLACK] = RandomAI()
+                self.ai_players[chess.BLACK] = RandomAI(self.board)
 
         print self.ai_players
 
