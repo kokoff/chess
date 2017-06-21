@@ -28,7 +28,6 @@ class AI:
     MIN_INT = - sys.maxint - 1
     MAX_INT = sys.maxint
     PIECE_SCORES = [0, 1, 2, 3, 4, 5, 6]
-    print chess.PAWN
     PIECE_SCORES[chess.PAWN] = 10
     PIECE_SCORES[chess.KNIGHT] = 30
     PIECE_SCORES[chess.BISHOP] = 30
@@ -93,15 +92,26 @@ class AI:
 
             return bestScore
 
+    def evaluate_material(self, board):
+        score = 0
+        for piece in chess.PIECE_TYPES:
+            score += (len(board.pieces(piece, self.player)) - len(board.pieces(piece, not self.player))) * \
+                     AI.PIECE_SCORES[piece]
+        return score
+
     def heuristic(self, board):
-        if board.is_game_over() and board.result() != '1/2-1/2':
-            iwin = (board.result() is '1-0') is self.player
-            return 2000 if iwin else -2000
+        if board.is_game_over():
+            if board.result() != '1/2-1/2':
+                iwin = (board.result() is '1-0') is self.player
+                return 2000 if iwin else -2000
+            else:
+                score = self.evaluate_material(board)
+
+                if score > 0:
+                    score = -score
+                return score
         else:
-            score = 0
-            for piece in chess.PIECE_TYPES:
-                score += (len(board.pieces(piece, self.player)) - len(board.pieces(piece, not self.player))) * \
-                         AI.PIECE_SCORES[piece]
+            score = self.evaluate_material(board)
             return score
 
 
