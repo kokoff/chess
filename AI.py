@@ -27,6 +27,14 @@ class RandomAI:
 class AI:
     MIN_INT = - sys.maxint - 1
     MAX_INT = sys.maxint
+    PIECE_SCORES = [0, 1, 2, 3, 4, 5, 6]
+    print chess.PAWN
+    PIECE_SCORES[chess.PAWN] = 10
+    PIECE_SCORES[chess.KNIGHT] = 30
+    PIECE_SCORES[chess.BISHOP] = 30
+    PIECE_SCORES[chess.ROOK] = 50
+    PIECE_SCORES[chess.QUEEN] = 90
+    PIECE_SCORES[chess.KING] = 2000
 
     def __init__(self, board, player, ply=4):
         self.board = board
@@ -88,10 +96,11 @@ class AI:
     def heuristic(self, board):
         score = 0
         for piece in chess.PIECE_TYPES:
-            score += (len(board.pieces(piece, self.player)) - len(board.pieces(piece, not self.player))) * piece
+            score += (len(board.pieces(piece, self.player)) - len(board.pieces(piece, not self.player))) * \
+                     AI.PIECE_SCORES[piece]
         if board.is_game_over() and board.result() != '1/2-1/2':
             iwin = (board.result() is '1-0') is self.player
-            score += 100 if iwin else -100
+            score += 2000 if iwin else -2000
         return score
 
 
